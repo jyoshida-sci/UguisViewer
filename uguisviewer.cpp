@@ -257,9 +257,7 @@ bool UguisViewer::ImportFile(QString myFileName)
     Init();
     fileName = myFileName;
 
-
     QString suffix = QFileInfo(fileName).suffix();
-
 
     if (suffix == "json" || suffix == "JSON")
     {
@@ -435,6 +433,7 @@ bool UguisViewer::ImportFile(QString myFileName)
 bool UguisViewer::loadImg()
 {
     dirName = appsettings->value("readdir").toString();
+    qDebug() << "appsettings->value(readdir).toString() is ";
     qDebug() << QDir(dirName).absolutePath();
 
     QDir dir = QDir(dirName);
@@ -450,9 +449,9 @@ bool UguisViewer::loadImg()
     //dir path
     dir = QFileInfo(fileName).absoluteDir();
     appsettings->setValue("readdir", dir.absolutePath());
+    dirName = appsettings->value("readdir").toString();
 
     bool status = ImportFile(fileName);
-
     return status;
 }
 
@@ -540,8 +539,8 @@ void UguisViewer::labMouseMoved(QMouseEvent* e){
     int cx = e->x();
     int cy = e->y();
     int cz = ipict;
-    qDebug() << ipict;
-    qDebug() << QString("current pos: %1, %2, %3").arg(cx, 4, 10).arg(cy, 4, 10).arg(cz, 4, 10);
+    //qDebug() << ipict;
+    //qDebug() << QString("current pos: %1, %2, %3").arg(cx, 4, 10).arg(cy, 4, 10).arg(cz, 4, 10);
 
     lab_pix->setText(QString("current pos: %1, %2, %3").arg(cx, 4, 10).arg(cy, 4, 10).arg(cz, 4, 10));
 
