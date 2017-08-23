@@ -94,13 +94,14 @@ private:
 
     QString document_unit;
     std::vector<QVector3D> vsxyz;
-    int lx, ly, lz;
-	int wi;
+    int wi;
 	int he;
-	int start_x, start_y, start_z;
-	int end_x, end_y, end_z;
+    double start_x, start_y, start_z;
+    double end_x, end_y, end_z;
     double mm_px, mm_py, mm_pz;
 	double Sh;
+    int clkx, clky, clkz;
+    double clksz;
 
 	void Init();
 
