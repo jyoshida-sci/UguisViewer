@@ -1,0 +1,30 @@
+{
+    "DocumentType" : {
+        "ver": "20170810",
+        "unit": "mm",
+        "comment": "kono json ha yoshida ga te de nyuryoku shita monodesu"
+    },
+    "Stage" : {
+        "Location": "japan",
+        "ID": 999,
+        "Objective": 50
+    },
+    "EmulsionType": {
+        "Experiment": "E07",
+        "Module": 99,
+        "Plate": 9,
+        "Sh": 2.0
+    },
+    "ImageType": {
+        "Height": 440,
+        "Width": 512,
+        "Depth": 8
+    },
+    "Interval": [ 0.000283, 0.000284,  0.003],
+    "Images": [
+        {"Path":"1.png", "x":1.000, "y":-2.000, "z":-0.1060},
+        {"Path":"2.png", "x":1.000, "y":-2.000, "z":-0.1059},
+        {"Path":"3.png", "x":1.000, "y":-2.000, "z":-0.103},
+        {"Path":"4.png", "x":1.000, "y":-2.000, "z":-0.1000}
+    ]
+}
