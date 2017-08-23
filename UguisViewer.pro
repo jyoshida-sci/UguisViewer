@@ -25,7 +25,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        uguisviewer.cpp
+        uguisviewer.cpp \
+    QClickableLabel.cpp
 
 HEADERS += \
-        uguisviewer.h
+        uguisviewer.h \
+    QClickableLabel.h
