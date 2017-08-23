@@ -37,3 +37,14 @@ DEPENDPATH  += "C:/opencv/opencv320/build_opencv-3.2.0_x86/install/include"
 INCLUDEPATH += "C:/opencv/opencv320/build_opencv-3.2.0_x86/install/include"
 LIBS += -L"C:/opencv/opencv320/build_opencv-3.2.0_x86/install/x86/vc12/lib"
 LIBS += -lopencv_core320 -lopencv_highgui320 -lopencv_imgproc320 -lopencv_imgcodecs320
+
+
+CONFIG(release,debug|release)
+{
+    LIBS += -lopencv_core320 -lopencv_highgui320 -lopencv_imgproc320 -lopencv_imgcodecs320
+}
+CONFIG(debug,debug|release)
+{
+    LIBS += -lopencv_core320d -lopencv_highgui320d -lopencv_imgproc320d -lopencv_imgcodecs320d
+}
+
