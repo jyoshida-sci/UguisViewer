@@ -392,20 +392,21 @@ bool UguisViewer::loadImg()
 
 void UguisViewer::labMouseClicked(QMouseEvent* e)
 {
-    lx = e->x();
-    ly = e->y();
-    lz = ipict;
-    lab_pix_cl->setText(QString("click: %1, %2, %3").arg(lx, 4, 10).arg(ly, 4, 10).arg(lz, 4, 10));
+    clkx = e->x();
+    clky = e->y();
+    clkz = ipict;
+    clksz =  vsxyz[ipict].z();
+    lab_pix_cl->setText(QString("click: %1, %2, %3").arg(clkx, 4, 10).arg(clky, 4, 10).arg(clkz, 4, 10));
 
     double stage[3];
-    stage[0] = vsxyz[ipict].x() - (lx - wi / 2)*mm_px;
-    stage[1] = vsxyz[ipict].y() + (ly - he / 2)*mm_py;
+    stage[0] = vsxyz[ipict].x() - (clkx - wi / 2)*mm_px;
+    stage[1] = vsxyz[ipict].y() + (clky - he / 2)*mm_py;
     stage[2] = vsxyz[ipict].z();
     lab_stg_cl->setText(QString("%1, %2, %3").arg(stage[0], 7, 'f', 4).arg(stage[1], 7, 'f', 4).arg(stage[2], 7, 'f', 4));
 
     if (e->buttons() & Qt::LeftButton){
         QString str = txt_clicked->toPlainText();
-        str += QString("%1 %2 %3 ").arg(lx).arg(ly).arg(lz);
+        str += QString("%1 %2 %3 ").arg(clkx).arg(clky).arg(clkz);
         str += QString("%1 %2 %3\n").arg(stage[0], 7, 'f', 4).arg(stage[1], 7, 'f', 4).arg(stage[2], 7, 'f', 4);
         txt_clicked->setText(str);
     }
@@ -441,24 +442,26 @@ void UguisViewer::labMouseClicked(QMouseEvent* e)
 
                 double dx = -(end_x - start_x)*mm_px;
                 double dy = (end_y - start_y)*mm_py;
-                double dz = (end_z - start_z)*mm_pz;
+                double dz = end_z - start_z;
+                qDebug() << QString("%1 %2 %3\n").arg(dx, 7, 'f', 4).arg(dy, 7, 'f', 4).arg(dz, 7, 'f', 4);
 
-                double range = sqrt(dx*dx + dy*dy + dz*dz*Sh*Sh);
-                str += QString("Range= %1\n").arg(range);
+                double range = sqrt(dx*dx + dy*dy + dz*dz);
+                double rangesh = sqrt(dx*dx + dy*dy + dz*dz*Sh*Sh);
+                str += QString("Range = %1 (%2)[mm]\n").arg(range,7, 'f', 4).arg(rangesh,7, 'f', 4);
 
                 double phi = atan2(dy, dx) * 180 / M_PI;
                 if (dy < 0) phi += 360.0;
-                str += QString("Angle phi= %1\n").arg(phi);
+                str += QString("azimuth_phi= %1[deg]\n").arg(phi,4, 'f', 1);
 
-                double cos_theta = dz*Sh / range;
-                if (cos_theta>1.0){
-                    cos_theta = 1.0;
-                }
-                if (cos_theta<-1.0){
-                    cos_theta = -1.0;
-                }
+                double cos_theta = dz / range;
+                if (cos_theta>1.0){cos_theta = 1.0;}
+                if (cos_theta<-1.0){cos_theta = -1.0;}
                 double theta = acos(cos_theta) * 180 / M_PI;
-                str += QString("Angle theta= %1\n").arg(theta);
+                double cos_theta_sh = dz*Sh / range;
+                if (cos_theta_sh>1.0){cos_theta_sh = 1.0;}
+                if (cos_theta_sh<-1.0){cos_theta_sh = -1.0;}
+                double theta_sh = acos(cos_theta_sh) * 180 / M_PI;
+                str += QString("zenith_theta= %1 (%2) [deg]\n").arg(theta,4, 'f', 1).arg(theta_sh,4, 'f', 1);
 
                 txt_clicked->setText(str);
             }
@@ -480,19 +483,19 @@ void UguisViewer::labMouseMoved(QMouseEvent* e){
     lab_pix->setText(QString("current pos: %1, %2, %3").arg(cx, 4, 10).arg(cy, 4, 10).arg(cz, 4, 10));
 
     double stage[3];
-    stage[0] = vsxyz[ipict].x() - (lx - wi / 2)*mm_px;
-    stage[1] = vsxyz[ipict].y() + (ly - he / 2)*mm_py;
+    stage[0] = vsxyz[ipict].x() - (clkx - wi / 2)*mm_px;
+    stage[1] = vsxyz[ipict].y() + (clky - he / 2)*mm_py;
     stage[2] = vsxyz[ipict].z();
     lab_stg->setText(QString("%1, %2, %3").arg(stage[0], 7, 'f', 4).arg(stage[1], 7, 'f', 4).arg(stage[2], 7, 'f', 4));
 
     if (e->buttons() & Qt::LeftButton){
-        int dx = cx - lx;
-        int dy = cy - ly;
-        int dz = cz - lz;
-
+        int dx = cx - clkx;
+        int dy = cy - clky;
+        int dz = cz - clkz;
+        double dsz = stage[2] - clksz;
         lab_pix_dr->setText(QString("drag: %1, %2, %3").arg(dx, 4, 10).arg(dy, 4, 10).arg(dz, 4, 10));
-        lab_stg_dr->setText(QString("%1, %2, %3 (%4)").arg(dx*mm_px, 7, 'f', 4).arg(dy*mm_py, 7, 'f', 4).arg(dz*mm_pz, 7, 'f', 4).arg(dz*mm_pz*Sh, 7, 'f', 4));
-    }
+        lab_stg_dr->setText(QString("%1, %2, %3 (%4)").arg(dx*mm_px, 7, 'f', 4).arg(dy*mm_py, 7, 'f', 4).arg(dsz, 7, 'f', 4).arg(dsz*Sh, 7, 'f', 4));
+   }
 
     updateSubDisplay(e);
 }
