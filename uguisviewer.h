@@ -16,7 +16,7 @@ class QCheckBox;
 class QTextEdit;
 class QClickableLabel;
 class QSlider;
-
+class QVector3D;
 
 class UguisViewer : public QWidget
 {
@@ -89,18 +89,17 @@ private:
 	QPushButton* but_prevfile;
 	QPushButton* but_nextfile;
 
-
 	int ipict;
 
-	QString document_unit;
 
-	int lx, ly, lz;
+    QString document_unit;
+    std::vector<QVector3D> vsxyz;
+    int lx, ly, lz;
 	int wi;
 	int he;
 	int start_x, start_y, start_z;
 	int end_x, end_y, end_z;
-	double um_px, um_py, um_pz;
-	double viewx, viewy, viewz;
+    double mm_px, mm_py, mm_pz;
 	double Sh;
 
 	void Init();
@@ -110,3 +109,5 @@ private:
 	bool readIthFileInCurrentDir(int i);
 
 };
+
+
