@@ -26,6 +26,7 @@
 #include "qmenu.h"
 #include <QMouseEvent>
 
+#include "qvector3d.h"
 #include "QClickableLabel.h"
 
 #include <stdio.h>
@@ -108,7 +109,8 @@ UguisViewer::UguisViewer(QWidget *parent)
 
     //texteditarea
     txt_clicked = new QTextEdit();
-    txt_clicked->setFixedWidth(170);
+    txt_clicked->setFixedWidth(230);
+    txt_clicked->setText("#px py lz stagex y z\n");
     lay->addWidget(txt_clicked, 0, 3, 5, 1);
     but_writxt = new QPushButton(tr("&Save File"));
     lay->addWidget(but_writxt, 5, 3, 1, 1);
@@ -161,6 +163,7 @@ void UguisViewer::Init()
 {
     vomat.clear();
     vfmat.clear();
+    vsxyz.clear();
 }
 
 
@@ -269,19 +272,15 @@ bool UguisViewer::ImportFile(QString myFileName)
         QJsonObject jsonobj = jsondoc.object();
         QJsonArray array_images = jsonobj["Images"].toArray();
 
-
         document_unit = jsonobj["DocumentType"].toObject()["unit"].toString();
         lab_stg_unit->setText("[" + document_unit + "]");
 
         wi = jsonobj["ImageType"].toObject()["Width"].toInt();
         he = jsonobj["ImageType"].toObject()["Height"].toInt();
         Sh = jsonobj["EmulsionType"].toObject()["Sh"].toDouble();
-        um_px = jsonobj["Interval"].toArray().at(0).toDouble();
-        um_py = jsonobj["Interval"].toArray().at(1).toDouble();
-        um_pz = jsonobj["Interval"].toArray().at(2).toDouble();
-        viewx = jsonobj["InitialPos"].toArray().at(0).toDouble();
-        viewy = jsonobj["InitialPos"].toArray().at(1).toDouble();
-        viewz = jsonobj["InitialPos"].toArray().at(2).toDouble();
+        mm_px = jsonobj["Interval"].toArray().at(0).toDouble();
+        mm_py = jsonobj["Interval"].toArray().at(1).toDouble();
+        mm_pz = jsonobj["Interval"].toArray().at(2).toDouble();
 
         //read img files
         for (int p = 0; p<array_images.count(); p++){
@@ -292,83 +291,18 @@ bool UguisViewer::ImportFile(QString myFileName)
             cv::Mat mat1 = cv::imread(filefullpath, 0);//gray scale
             cv::cvtColor(mat1, mat1, CV_GRAY2BGR);
             vomat.push_back(mat1);
+
+            QVector3D v3 = QVector3D(
+                        array_images.at(p).toObject()["x"].toDouble(),
+                        array_images.at(p).toObject()["y"].toDouble(),
+                        array_images.at(p).toObject()["z"].toDouble());
+            vsxyz.emplace_back(v3);
         }
 
+    }else{
+        return false;
     }
-    else if (suffix == "dat" || suffix == "DAT")
-    {
 
-        document_unit = "---";
-        lab_stg_unit->setText("[" + document_unit + "]");
-
-        wi = 512;
-        he = 440;
-        Sh = 0.0;
-        um_px = 0.0;
-        um_py = 0.0;
-        um_pz = 0.0;
-        viewx = 0.0;
-        viewy = 0.0;
-        viewz = 0.0;
-
-        QDataStream in(&file);
-        const int pixelperpage = wi*he;
-        std::vector<char*> vbd;//vector binarized data
-
-        while (!in.atEnd()) {
-            cv::Mat mat1(he, wi, CV_8U);
-
-            char* b = (char *)malloc(pixelperpage);
-            if (b == NULL)return false;
-            in.readRawData(b, pixelperpage);
-
-            for (int by = 0; by < pixelperpage; by++){
-                char c = b[by];
-                mat1.data[by] = c;
-            }
-            cv::cvtColor(mat1, mat1, CV_GRAY2BGR);
-            vomat.push_back(mat1);
-
-            free(b);
-        }
-    }
-    else if (suffix == "img" || suffix == "IMG")
-    {
-
-        document_unit = "---";
-        lab_stg_unit->setText("[" + document_unit + "]");
-
-        wi = 512;
-        he = 440;
-        Sh = 0.0;
-        um_px = 0.0;
-        um_py = 0.0;
-        um_pz = 0.0;
-        viewx = 0.0;
-        viewy = 0.0;
-        viewz = 0.0;
-
-        QDataStream in(&file);
-        const int pixelperpage = wi*he;
-        std::vector<char*> vbd;//vector binarized data
-
-        while (!in.atEnd()) {
-            cv::Mat mat1(he, wi, CV_8U);
-
-            char* b = (char *)malloc(pixelperpage);
-            if (b == NULL)return false;
-            in.readRawData(b, pixelperpage);
-
-            for (int by = 0; by < pixelperpage; by++){
-                char c = b[by];
-                mat1.data[by] = c;
-            }
-            cv::cvtColor(mat1, mat1, CV_GRAY2BGR);
-            vomat.push_back(mat1);
-
-            free(b);
-        }
-    }
 
     for (int i = 0; i < vomat.size(); i++){
         cv::Mat mat2 = vomat[i].clone();
@@ -443,7 +377,7 @@ bool UguisViewer::loadImg()
                 this,
                 tr("Open files"),
                 dir.absolutePath(),
-                tr("Kanda-Dat-Files JSON-Files (*.dat *.json);;All Files (*)"));
+                tr("JSON-Files (*.json);;All Files (*)"));
     if (fileName.isEmpty())return false;
 
     //dir path
@@ -464,14 +398,15 @@ void UguisViewer::labMouseClicked(QMouseEvent* e)
     lab_pix_cl->setText(QString("click: %1, %2, %3").arg(lx, 4, 10).arg(ly, 4, 10).arg(lz, 4, 10));
 
     double stage[3];
-    stage[0] = -(lx - wi / 2)*um_px;
-    stage[1] = (ly - he / 2)*um_py;
-    stage[2] = ipict * um_pz;
-    lab_stg_cl->setText(QString("%1, %2, %3").arg(viewx + stage[0], 7, 'f', 1).arg(viewy + stage[1], 7, 'f', 1).arg(viewz + stage[2], 7, 'f', 1));
+    stage[0] = vsxyz[ipict].x() - (lx - wi / 2)*mm_px;
+    stage[1] = vsxyz[ipict].y() + (ly - he / 2)*mm_py;
+    stage[2] = vsxyz[ipict].z();
+    lab_stg_cl->setText(QString("%1, %2, %3").arg(stage[0], 7, 'f', 4).arg(stage[1], 7, 'f', 4).arg(stage[2], 7, 'f', 4));
 
     if (e->buttons() & Qt::LeftButton){
         QString str = txt_clicked->toPlainText();
-        str += QString("%1  %2  %3\n").arg(lx).arg(ly).arg(lz);
+        str += QString("%1 %2 %3 ").arg(lx).arg(ly).arg(lz);
+        str += QString("%1 %2 %3\n").arg(stage[0], 7, 'f', 4).arg(stage[1], 7, 'f', 4).arg(stage[2], 7, 'f', 4);
         txt_clicked->setText(str);
     }
     else if (e->buttons() & Qt::RightButton)
@@ -490,7 +425,7 @@ void UguisViewer::labMouseClicked(QMouseEvent* e)
             {
                 start_x = e->x();
                 start_y = e->y();
-                start_z = ipict;
+                start_z = vsxyz[ipict].z();
 
                 QString str = txt_clicked->toPlainText();
                 str += QString("start pos: %1 %2 %3\n").arg(start_x).arg(start_y).arg(start_z);
@@ -500,13 +435,13 @@ void UguisViewer::labMouseClicked(QMouseEvent* e)
             {
                 end_x = e->x();
                 end_y = e->y();
-                end_z = ipict;
+                end_z = vsxyz[ipict].z();
                 QString str = txt_clicked->toPlainText();
                 str += QString("end pos: %1 %2 %3\n").arg(end_x).arg(end_y).arg(end_z);
 
-                double dx = -(end_x - start_x)*um_px;
-                double dy = (end_y - start_y)*um_py;
-                double dz = (end_z - start_z)*um_pz;
+                double dx = -(end_x - start_x)*mm_px;
+                double dy = (end_y - start_y)*mm_py;
+                double dz = (end_z - start_z)*mm_pz;
 
                 double range = sqrt(dx*dx + dy*dy + dz*dz*Sh*Sh);
                 str += QString("Range= %1\n").arg(range);
@@ -545,10 +480,10 @@ void UguisViewer::labMouseMoved(QMouseEvent* e){
     lab_pix->setText(QString("current pos: %1, %2, %3").arg(cx, 4, 10).arg(cy, 4, 10).arg(cz, 4, 10));
 
     double stage[3];
-    stage[0] = -(cx - wi / 2)*um_px;
-    stage[1] = (cy - he / 2)*um_py;
-    stage[2] = ipict * um_pz;
-    lab_stg->setText(QString("%1, %2, %3").arg(viewx + stage[0], 7, 'f', 1).arg(viewy + stage[1], 7, 'f', 1).arg(viewz + stage[2], 7, 'f', 1));
+    stage[0] = vsxyz[ipict].x() - (lx - wi / 2)*mm_px;
+    stage[1] = vsxyz[ipict].y() + (ly - he / 2)*mm_py;
+    stage[2] = vsxyz[ipict].z();
+    lab_stg->setText(QString("%1, %2, %3").arg(stage[0], 7, 'f', 4).arg(stage[1], 7, 'f', 4).arg(stage[2], 7, 'f', 4));
 
     if (e->buttons() & Qt::LeftButton){
         int dx = cx - lx;
@@ -556,12 +491,10 @@ void UguisViewer::labMouseMoved(QMouseEvent* e){
         int dz = cz - lz;
 
         lab_pix_dr->setText(QString("drag: %1, %2, %3").arg(dx, 4, 10).arg(dy, 4, 10).arg(dz, 4, 10));
-        lab_stg_dr->setText(QString("%1, %2, %3 (%4)").arg(dx*um_px, 7, 'f', 1).arg(dy*um_py).arg(dz*um_pz, 7, 'f', 1).arg(dz*um_pz*Sh, 7, 'f', 1));
-
+        lab_stg_dr->setText(QString("%1, %2, %3 (%4)").arg(dx*mm_px, 7, 'f', 4).arg(dy*mm_py, 7, 'f', 4).arg(dz*mm_pz, 7, 'f', 4).arg(dz*mm_pz*Sh, 7, 'f', 4));
     }
 
     updateSubDisplay(e);
-
 }
 
 
@@ -641,8 +574,6 @@ void UguisViewer::updateSubDisplay(QMouseEvent* e){
                        QImage::Format_RGB888);
         image_f = image_f.convertToFormat(QImage::Format_RGB32);
         lab_img_f->setPixmap(QPixmap::fromImage(image_f));
-
-
     }
 }
 
@@ -690,13 +621,12 @@ void UguisViewer::readNextFile()
 }
 
 
+
 bool UguisViewer::readIthFileInCurrentDir(int i)
 {
     QDir dir = appsettings->value("readdir").toString();
     QStringList filter;
-    filter += "*.dat";
     filter += "*.json";
-    filter += "*.img";
     int ifile = 0;
 
     QStringList path_list = dir.entryList(filter, QDir::Files);
@@ -722,7 +652,6 @@ bool UguisViewer::readIthFileInCurrentDir(int i)
         but_nextfile->setEnabled(true);
     }
 
-
     QString ithFileName = path_list[ifile + i];
     QString ithFileNamePath = appsettings->value("readdir").toString() + "/" + ithFileName;
 
@@ -730,6 +659,3 @@ bool UguisViewer::readIthFileInCurrentDir(int i)
 
     return true;
 }
-
-
-
