@@ -280,7 +280,6 @@ bool UguisViewer::ImportFile(QString myFileName)
         Sh = jsonobj["EmulsionType"].toObject()["Sh"].toDouble();
         mm_px = jsonobj["Interval"].toArray().at(0).toDouble();
         mm_py = jsonobj["Interval"].toArray().at(1).toDouble();
-        mm_pz = jsonobj["Interval"].toArray().at(2).toDouble();
 
         //read img files
         for (int p = 0; p<array_images.count(); p++){

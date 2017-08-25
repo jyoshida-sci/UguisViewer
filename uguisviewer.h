@@ -91,20 +91,18 @@ private:
 
 	int ipict;
 
-
     QString document_unit;
     std::vector<QVector3D> vsxyz;
     int wi;
 	int he;
     double start_x, start_y, start_z;
     double end_x, end_y, end_z;
-    double mm_px, mm_py, mm_pz;
+    double mm_px, mm_py;
 	double Sh;
     int clkx, clky, clkz;
     double clksz;
 
 	void Init();
-
 
 	bool ImportFile(QString FileName);
 	bool readIthFileInCurrentDir(int i);
