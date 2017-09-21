@@ -456,7 +456,7 @@ void UguisViewer::labMouseClicked(QMouseEvent* e)
                 if (cos_theta>1.0){cos_theta = 1.0;}
                 if (cos_theta<-1.0){cos_theta = -1.0;}
                 double theta = acos(cos_theta) * 180 / M_PI;
-                double cos_theta_sh = dz*Sh / range;
+                double cos_theta_sh = dz*Sh / rangesh;
                 if (cos_theta_sh>1.0){cos_theta_sh = 1.0;}
                 if (cos_theta_sh<-1.0){cos_theta_sh = -1.0;}
                 double theta_sh = acos(cos_theta_sh) * 180 / M_PI;
