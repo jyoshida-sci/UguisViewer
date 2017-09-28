@@ -29,6 +29,13 @@
 #include "qvector3d.h"
 #include "QClickableLabel.h"
 
+#include "TGraph.h"
+#include "TCanvas.h"
+#include "TH1D.h"
+#include "TStyle.h"
+#include "TNtuple.h"
+#include "TF1.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -418,6 +425,8 @@ void UguisViewer::labMouseClicked(QMouseEvent* e)
         QMenu myMenu;
         myMenu.addAction("Set the start point");
         myMenu.addAction("Set the end point");
+        myMenu.addAction("Get the darkest in 35layers");
+        myMenu.addAction("Get the darkest in 50layers");
 
         QAction* selectedItem = myMenu.exec(globalPos);
         if (selectedItem){
@@ -464,10 +473,97 @@ void UguisViewer::labMouseClicked(QMouseEvent* e)
 
                 txt_clicked->setText(str);
             }
+            else if (selectedItem->text() == "Get the darkest in 35layers")
+            {
+                   QString str = txt_clicked->toPlainText();
+                   str += QString(selectedItem->text() + "\n");
+                   txt_clicked->setText(str);
+                   getTheDarkestZ(e->x(), e->y(), ipict, 25);
+            }
+            else if (selectedItem->text() == "Get the darkest in 50layers")
+            {
+                   QString str = txt_clicked->toPlainText();
+                   str += QString(selectedItem->text() + "\n");
+                   txt_clicked->setText(str);
+                   getTheDarkestZ(e->x(), e->y(), ipict, 50);
+             }
 
         }//if (selectedItem)
     }
 
+}
+
+void UguisViewer::getTheDarkestZ(int x, int y, int z,  int range)
+{
+    std::vector<double> v_z_pos;
+    std::vector<double> v_z_brighto;
+    std::vector<double> v_z_brightf;
+
+    int width = vomat[0].cols;
+
+    int zmin = 0;
+    int zmax = vomat.size() - 1;
+    if (z - range > zmin){ zmin = z - range; }
+    if (z + range < zmax){ zmax = z + range; }
+    QString str = txt_clicked->toPlainText();
+    for(int i=zmin; i<zmax; i++ ){
+            int brio = vomat[i].data[(width*y + x) * 3];//3-channels
+            int brif = vfmat[i].data[(width*y + x) * 3];//3-channels
+            v_z_pos.push_back(i);
+            v_z_brighto.push_back(brio);
+            v_z_brightf.push_back(brif);
+            str += QString("%1 %2 %3\n").arg(i).arg(brio).arg(brif);
+    }
+
+    QString fff = QFileInfo(fileName).fileName();
+
+    TCanvas* rootcanvas = new TCanvas("rootcanvas", "canvas", 800, 600);
+
+    TGraph* g = new TGraph(v_z_pos.size(), &(v_z_pos.at(0)), &(v_z_brightf.at(0)));
+    gStyle->SetOptFit(1111);
+    g->SetMinimum(0);
+//	g->SetMaximum(100);
+    g->SetMarkerColor(4);///blue
+    g->SetMarkerStyle(8);///o-marker
+    g->SetMarkerSize(1);//
+    g->Draw("AP");
+
+
+    Double_t p[5];//fitting params
+    TF1 *fGaussConst = new TF1("fGaussConst", "gaus(0)+pol1(3)", v_z_pos[0], v_z_pos[v_z_pos.size()-1]);
+    //initial params
+    fGaussConst->SetParameter(0, v_z_brightf[int(v_z_pos.size()/2)]);
+    fGaussConst->SetParameter(1, z);//mean
+    fGaussConst->SetParameter(2, 1);
+    fGaussConst->SetParameter(3, 0);
+    fGaussConst->SetParameter(4, 0);
+
+    g->Fit("fGaussConst", "", "", v_z_pos[0], v_z_pos[v_z_pos.size() - 1]);
+    //fGaussConst->Draw("same");
+    //fGaussConst->Print();
+
+
+    //PNG filename: filename_date_time.png
+    time_t rawtime;
+    struct tm * timeinfo;
+    char currenttime[127];
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(currenttime, sizeof(currenttime), "%Y%m%d_%H%M%S", timeinfo);
+
+    char pngfilename[127];
+    sprintf(pngfilename, "%s_x%d_y%d_z%d.png", currenttime, x, y, z);
+    rootcanvas->Print(pngfilename);
+
+
+    fGaussConst->GetParameters(p);
+    str += QString("height= %1\n").arg(p[0]);
+    str += QString("mean= %1\n").arg(p[1]);
+    str += QString("sigma= %1\n").arg(p[2]);
+    str += QString("intercept= %1\n").arg(p[3]);
+    str += QString("slope= %1\n").arg(p[4]);
+    str += QString("chi2= %1\n").arg(fGaussConst->GetChisquare());
+    txt_clicked->setText(str);
 }
 
 

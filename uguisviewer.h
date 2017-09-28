@@ -106,6 +106,7 @@ private:
 
 	bool ImportFile(QString FileName);
 	bool readIthFileInCurrentDir(int i);
+    void getTheDarkestZ(int x, int y, int z,  int range);
 
 };
 
